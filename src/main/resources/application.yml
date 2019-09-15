@@ -1,16 +1,23 @@
 app:
   base-url: http://localhost:9000
   jwt-token-key: fipjwepgihowrjgpieongiwrjgglihngukhwnipgo
+  email:
+    host: smtp.yandex.ru
+    port: 465
+    full-email: noreply@a6raywa1cher.com
+    username: noreply@a6raywa1cher.com
+    password: ----
+  my-url: http://95.216.137.74:6112
 spring:
   jmx:
     default-domain: com.a6raywa1cher.javahackbugslimited
     unique-names: true
-spring.mail.host: smtp.yandex.ru
-spring.mail.port: 465
-spring.mail.username: noreply@a6raywa1cher.com
-spring.mail.password: ----
-spring.mail.properties.mail.smtp.auth: true
-spring.mail.properties.mail.smtp.starttls.enable: true
+#spring.mail.host: smtp.yandex.ru
+#spring.mail.port: 465
+#spring.mail.username: noreply@a6raywa1cher.com
+#spring.mail.password: ----
+#spring.mail.properties.mail.smtp.auth: true
+#spring.mail.properties.mail.smtp.starttls.enable: true
 server.port: 8081
 # ===============================
 # DB CONNECTION

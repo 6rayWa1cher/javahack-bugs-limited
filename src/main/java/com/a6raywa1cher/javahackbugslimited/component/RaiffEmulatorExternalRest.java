@@ -22,7 +22,7 @@ public class RaiffEmulatorExternalRest implements ExternalRest {
 
 	@Override
 	public UserMirror getUser(Integer userId) {
-		return restTemplate.getForEntity(URI.create(appConfigProperties.getBaseUrl()).resolve("/user/" + userId),
+		return restTemplate.getForEntity(URI.create(appConfigProperties.getBaseUrl()).resolve("user/" + userId),
 				UserMirror.class)
 				.getBody();
 	}
@@ -47,13 +47,13 @@ public class RaiffEmulatorExternalRest implements ExternalRest {
 		AccountCreationDTO dto = new AccountCreationDTO();
 		dto.setUserId(userId);
 		dto.setFrozenBySafeTransfer(isSafeTransfer);
-		return restTemplate.postForEntity(URI.create(appConfigProperties.getBaseUrl()).resolve("/account"),
+		return restTemplate.postForEntity(URI.create(appConfigProperties.getBaseUrl()).resolve("account"),
 				dto, AccountMirror.class).getBody();
 	}
 
 	@Override
 	public AccountMirror getById(Integer id) {
-		return restTemplate.getForEntity(URI.create(appConfigProperties.getBaseUrl()).resolve("/account/" + id),
+		return restTemplate.getForEntity(URI.create(appConfigProperties.getBaseUrl()).resolve("account/" + id),
 				AccountMirror.class).getBody();
 	}
 
@@ -63,7 +63,7 @@ public class RaiffEmulatorExternalRest implements ExternalRest {
 		dto.setFromId(from);
 		dto.setToId(to);
 		dto.setAmount(amount);
-		restTemplate.postForLocation(URI.create(appConfigProperties.getBaseUrl()).resolve("/account/transfer"),
+		restTemplate.postForLocation(URI.create(appConfigProperties.getBaseUrl()).resolve("account/transfer"),
 				dto);
 	}
 }

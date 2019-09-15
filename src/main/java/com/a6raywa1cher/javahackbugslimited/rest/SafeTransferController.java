@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @Controller
@@ -61,6 +62,39 @@ public class SafeTransferController {
 		response.setSafeTransfer(saved);
 		response.setLinkForSecondUser("/put_email?token=" + token);
 		return ResponseEntity.ok(response);
+	}
+
+	@PostMapping("/{transferId}/new_email_link")
+	public ResponseEntity<CreateSafeTransferResponse> createNewEmailLink(@PathVariable Integer transferId) {
+		Optional<SafeTransfer> optionalSafeTransfer = safeTransferService.getById(transferId);
+		if (optionalSafeTransfer.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		SafeTransfer safeTransfer = optionalSafeTransfer.get();
+		ObjectMapper objectMapper = new ObjectMapper();
+		String payloadOfLink = objectMapper.createObjectNode()
+				.put("transferId", safeTransfer.getId())
+				.toString();
+		String token = jwtComponent.create("cst", payloadOfLink);
+		CreateSafeTransferResponse response = new CreateSafeTransferResponse();
+		response.setSafeTransfer(safeTransfer);
+		response.setLinkForSecondUser("/put_email?token=" + token);
+		return ResponseEntity.ok(response);
+	}
+
+	@GetMapping("/get_by_id/{transferId}")
+	public ResponseEntity<SafeTransfer> getById(@PathVariable Integer transferId) {
+		Optional<SafeTransfer> optionalSafeTransfer = safeTransferService.getById(transferId);
+		if (optionalSafeTransfer.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(optionalSafeTransfer.get());
+	}
+
+	@GetMapping("/get_by_user/{userId}")
+	public ResponseEntity<List<SafeTransfer>> getAllTransfers(@PathVariable Integer userId) {
+		List<SafeTransfer> safeTransfers = safeTransferService.findAllByUserId(userId);
+		return ResponseEntity.ok(safeTransfers);
 	}
 
 	@PostMapping("/put_email")
@@ -105,7 +139,7 @@ public class SafeTransferController {
 	}
 
 	@GetMapping("/finalize")
-	public ResponseEntity<?> finalizeTransfer(@RequestParam(name = "token") String token) throws IOException {
+	public ResponseEntity<SafeTransfer> finalizeTransfer(@RequestParam(name = "token") String token) throws IOException {
 		Optional<String> additionalInfo = jwtComponent.decode("flz", token);
 		if (additionalInfo.isEmpty()) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
@@ -115,6 +149,7 @@ public class SafeTransferController {
 		SafeTransfer transfer = safeTransferService.getById(transferId).orElseThrow();
 		externalRest.transferMoney(transfer.getExternalFrozenAccount(), transfer.getExternalDestinationAccount(),
 				transfer.getTargetPrice());
-		return ResponseEntity.ok().build();
+		transfer.setStatus(SafeTransferStatus.FINALIZED);
+		return ResponseEntity.ok(safeTransferService.save(transfer));
 	}
 }
