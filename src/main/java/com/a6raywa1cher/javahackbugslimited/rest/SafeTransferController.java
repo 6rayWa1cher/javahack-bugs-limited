@@ -10,10 +10,12 @@ import com.a6raywa1cher.javahackbugslimited.models.SafeTransfer;
 import com.a6raywa1cher.javahackbugslimited.models.enumerations.SafeTransferStatus;
 import com.a6raywa1cher.javahackbugslimited.rest.dto.CreateSafeTransferDTO;
 import com.a6raywa1cher.javahackbugslimited.rest.dto.CreateSafeTransferResponse;
+import com.a6raywa1cher.javahackbugslimited.rest.dto.IsMoneyArrivedResponse;
 import com.a6raywa1cher.javahackbugslimited.rest.dto.PutEmailDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -113,8 +115,8 @@ public class SafeTransferController {
 	}
 
 	@PostMapping("/{transferId}/check")
-	public ResponseEntity<SafeTransfer> setCheck(@RequestParam(name = "value", defaultValue = "true") boolean val,
-	                                             @PathVariable Integer transferId) {
+	public ResponseEntity<?> setCheck(@RequestParam(name = "value", defaultValue = "true") boolean val,
+	                                  @PathVariable Integer transferId) {
 		Optional<SafeTransfer> optionalSafeTransfer = safeTransferService.getById(transferId);
 		if (optionalSafeTransfer.isEmpty()) {
 			return ResponseEntity.notFound().build();
@@ -123,7 +125,9 @@ public class SafeTransferController {
 		AccountMirror accountMirror = externalRest.getById(safeTransfer.getExternalFrozenAccount());
 		if (safeTransfer.getStatus() == SafeTransferStatus.FINALIZED || accountMirror.getMoney()
 				.compareTo(safeTransfer.getTargetPrice()) < 0) {
-			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.contentType(MediaType.APPLICATION_JSON_UTF8)
+					.body("{}");
 		}
 		if (val) {
 			ObjectMapper objectMapper = new ObjectMapper();
@@ -132,7 +136,7 @@ public class SafeTransferController {
 					.toString();
 			safeTransfer.setStatus(SafeTransferStatus.CHECKED);
 			emailService.sendSimpleMessage(safeTransfer.getEmail(), "Подтвердите оказание услуги",
-					"Нажмите на эту ссылку: " + properties.getMyUrl() + "/finalize?token=" +
+					"Нажмите на эту ссылку: " + properties.getMyUrl() + "/customer/finalize?token=" +
 							jwtComponent.create("flz", payloadOfLink));
 		} else {
 			safeTransfer.setStatus(SafeTransferStatus.CREATED);
@@ -153,5 +157,19 @@ public class SafeTransferController {
 				transfer.getTargetPrice());
 		transfer.setStatus(SafeTransferStatus.FINALIZED);
 		return ResponseEntity.ok(safeTransferService.save(transfer));
+	}
+
+	@GetMapping("/money_status/{transferId}")
+	public ResponseEntity<IsMoneyArrivedResponse> isMoneyArrived(@PathVariable Integer transferId) {
+		Optional<SafeTransfer> optionalSafeTransfer = safeTransferService.getById(transferId);
+		if (optionalSafeTransfer.isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		SafeTransfer safeTransfer = optionalSafeTransfer.get();
+		AccountMirror accountMirror = externalRest.getById(safeTransfer.getExternalFrozenAccount());
+		IsMoneyArrivedResponse response = new IsMoneyArrivedResponse();
+		response.setIsArrived(accountMirror.getMoney()
+				.compareTo(safeTransfer.getTargetPrice()) >= 0);
+		return ResponseEntity.ok(response);
 	}
 }
