@@ -60,7 +60,8 @@ public class SafeTransferController {
 		String token = jwtComponent.create("cst", payloadOfLink);
 		CreateSafeTransferResponse response = new CreateSafeTransferResponse();
 		response.setSafeTransfer(saved);
-		response.setLinkForSecondUser("/put_email?token=" + token);
+		response.setLinkForSecondUser(properties.getMyUrl() + "/customer/fill_email?token=" +
+				token + "&accountId=" + safeTransfer.getExternalFrozenAccount());
 		return ResponseEntity.ok(response);
 	}
 
@@ -78,7 +79,8 @@ public class SafeTransferController {
 		String token = jwtComponent.create("cst", payloadOfLink);
 		CreateSafeTransferResponse response = new CreateSafeTransferResponse();
 		response.setSafeTransfer(safeTransfer);
-		response.setLinkForSecondUser("/put_email?token=" + token);
+		response.setLinkForSecondUser(properties.getMyUrl() + "/customer/fill_email?token=" +
+				token + "&accountId=" + safeTransfer.getExternalFrozenAccount());
 		return ResponseEntity.ok(response);
 	}
 
@@ -119,8 +121,8 @@ public class SafeTransferController {
 		}
 		SafeTransfer safeTransfer = safeTransferService.getById(transferId).orElseThrow();
 		AccountMirror accountMirror = externalRest.getById(safeTransfer.getExternalFrozenAccount());
-		if (safeTransfer.getStatus() == SafeTransferStatus.FINALIZED || !accountMirror.getMoney()
-				.equals(safeTransfer.getTargetPrice())) {
+		if (safeTransfer.getStatus() == SafeTransferStatus.FINALIZED || accountMirror.getMoney()
+				.compareTo(safeTransfer.getTargetPrice()) < 0) {
 			return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 		}
 		if (val) {
